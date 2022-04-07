@@ -1,0 +1,6 @@
+pandas
+jupyter
+pyarrow
+isort 
+black 
+flake8
