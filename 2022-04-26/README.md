@@ -2,70 +2,64 @@
 
 - [pandas/test_parse_dates.py at main · pandas-dev/pandas](https://github.com/pandas-dev/pandas/blob/main/pandas/tests/io/parser/test_parse_dates.py)
 
-## たろうの進め方
-
-- 作業時間は一時間以内（メモ下記含めて）
-- 今後のCode Readingも効率的にやっていく方法を探りながら読む
-
 ## メモ
 
 - test を実行する
-    - 方法がわからず、速攻隣の人にきく
-        1. pandas を build する時にテストを回せる。それを使って実行。setup.py
-        1. pandas のソースコードをローカルに持って、テストを直接実行してエディタでデバグをしていく（←これをやってみよう）
-    - pandas 仮想環境にインストール。ファイルをぶち壊す気持ちで望む。
-        - .venv/lib/python3.9/site-packages/pandas/tests/io/parser/test_parse_dates.py
-        - 開いてデバグ実行
-            - dateutil でインポートエラー
-        - hypothesis と pytest はもうわからんかったんで、pip でライブラリ突っ込む
-    - ファイルをデバグ→ブレイクポイントで止まらない→あ、ここは関数群だ。
-    - test の実行方法がわからないことがわかった
-- たぶん Contributing 方法について書いてあるハズ。それをみたらテスト方法も書いてあるはず。
-    - あった→[Creating a development environment — pandas 1.4.2 documentation](https://pandas.pydata.org/pandas-docs/stable/development/contributing_environment.html#creating-a-development-environment)
-    - Using a Docker container に従う
-        - 手動で開発環境を整える代わりに、Docker使って構築する方法あるよ
-        - pandasが DockerFile を用意してるから、それ使ってね
+    - そもそも今回初めて test を実行するので全くわからず。
+    - contribute 方法にテストの方法があるはずと思って探したらあった
+        - [Creating a development environment — pandas 1.4.2 documentation](https://pandas.pydata.org/pandas-docs/stable/development/contributing_environment.html#creating-a-development-environment)
+        - `Creating an environment using Docker` に従う
+    - 開発環境構築
+    1. git clone 
         ```bash
         $ git clone git@github.com:pandas-dev/pandas.git
         $ cd pandas
-        $ ls
-            AUTHORS.md  LICENSES     README.md   azure-pipelines.yml  doc              pyproject.toml        setup.cfg      test_fast.sh   web
-            Dockerfile  MANIFEST.in  RELEASE.md  ci                   environment.yml  requirements-dev.txt  setup.py       typings
-            LICENSE     Makefile     asv_bench   codecov.yml          pandas           scripts               test_fast.bat  versioneer.py
         ```
-        - たしかにあった
+    1. イメージビルド。tag 名は、ドキュメントに従ってみました。
         ```bash
-        # イメージビルド。tag 名は、ドキュメントに従ってみました。
-        $ docker build --tag pandas-shinseitaro-dev . 
+        $ docker build --tag pandas-shinseitaro-env .
         # ログがわらわらいっぱいでてくる ... けっこう時間かかります
-        Successfully built 45c2f1e1123c
-        Successfully tagged pandas-shinseitaro-dev:latest
-
-
-        # 実行
-        $ docker run -it --rm -v $pwd:/home/pandas-shinseitaro pandas-shinseitaro-dev
-        root@68475d448b6e:/
-
+        :
+        :
+        Successfully built f721882369e7
+        Successfully tagged pandas-shinseitaro-env:latest
+        ```
+        ```
+        # コンテナ実行
+        $ docker run -it -w /home/pandas --rm -v $PWD:/home/pandas pandas-shinseitaro-env
+        root@edafc8dc68fb:/home/pandas# 
         ```
         - (この作業中に時間切れしたが、さすがにここで終わるとダメなので30分くらい延長)
-        - docment の見落としそうなところに `Note that you might need to rebuild the C extensions if/when you merge with upstream/master using:` って書いてあるので、やるべきなのかよくわからんけど実行
-
+    1. pytest でテスト回してみる（←？
         ```
-        $ root@68475d448b6e:/# cd home/pandas/
-        $ python setup.py build_ext -j 4
+        root@edafc8dc68fb:/home/pandas# pytest pandas/tests/io/parser/test_parse_dates.py 
+        ImportError while loading conftest '/home/pandas/pandas/conftest.py'.
+        pandas/__init__.py:22: in <module>
+            from pandas.compat import is_numpy_dev as _is_numpy_dev
+        pandas/compat/__init__.py:15: in <module>
+            from pandas.compat.numpy import (
+        pandas/compat/numpy/__init__.py:4: in <module>
+            from pandas.util.version import Version
+        pandas/util/__init__.py:1: in <module>
+            from pandas.util._decorators import (  # noqa:F401
+        pandas/util/_decorators.py:14: in <module>
+            from pandas._libs.properties import cache_readonly  # noqa:F401
+        pandas/_libs/__init__.py:13: in <module>
+            from pandas._libs.interval import Interval
+        E   ModuleNotFoundError: No module named 'pandas._libs.interval'
         ```
-        - で？
+    1. C拡張をビルドする必要がある、ってかいてあったの飛ばしてた。よく分かってないけど。 `python setup.py build_ext -j 4` をやってみる
         ```
-        $ root@68475d448b6e:/home/pandas# python setup.py test
+        root@edafc8dc68fb:/home/pandas# python setup.py build_ext -j 4
+        ``` 
+    1. もう一回テストトライ
         ```
-
-         
-
-
-
-
-
-
-## 参照
-- [VSCodeで自作モジュールのimportエラーを解消してみた | DevelopersIO](https://dev.classmethod.jp/articles/vscode_python_import_error/)
+        root@edafc8dc68fb:/home/pandas# pytest pandas/tests/io/parser/test_parse_dates.py 
+        :
+        :
+        ==== 17 failed, 359 passed, 29 skipped, 56 xfailed, 1 warning in 16.57s ===
+        ```
+    1. なにやってるのかさっぱりわからない
+        - やりたいことは `test_parse_dates.py` を ブレイクポイントを入れて実行したかっただけ。でもやり方わからないので、`test_read_csv_with_custom_date_parser` だけ分解して理解してみる
+        - [2022-04-26/test_read_csv_with_custom_date_parser.ipynb](./test_read_csv_with_custom_date_parser.ipynb)
 

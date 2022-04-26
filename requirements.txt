@@ -4,3 +4,4 @@ pyarrow
 isort 
 black 
 flake8
+blackcellmagic
