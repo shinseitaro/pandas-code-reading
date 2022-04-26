@@ -29,7 +29,6 @@
         $ docker run -it -w /home/pandas --rm -v $PWD:/home/pandas pandas-shinseitaro-env
         root@edafc8dc68fb:/home/pandas# 
         ```
-        - (この作業中に時間切れしたが、さすがにここで終わるとダメなので30分くらい延長)
     1. pytest でテスト回してみる（←？
         ```
         root@edafc8dc68fb:/home/pandas# pytest pandas/tests/io/parser/test_parse_dates.py 
